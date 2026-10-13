@@ -1,22 +1,4 @@
-# Azure Application Gateway WAF --- Complete Study Notes
-
-A hands-on guide to Azure Application Gateway, Web Application Firewall
-(WAF), common web attacks, WAF modes, custom rules, rate limiting,
-deployment, and troubleshooting.
-
-## Table of Contents
-
-1.  [Azure Application Gateway](#1-azure-application-gateway)
-2.  [WAF Policy](#2-web-application-firewall-policy)
-3.  [SQL Injection](#3-sql-injection-sqli)
-4.  [Cross-Site Scripting](#4-cross-site-scripting-xss)
-5.  [Detection vs Prevention](#5-detection-mode-vs-prevention-mode)
-6.  [How WAF Works](#6-how-application-gateway-waf-works)
-7.  [Custom Rules and Rate Limiting](#7-custom-rules-and-rate-limiting)
-8.  [Azure Lab](#8-azure-app-service--application-gateway-waf-lab)
-9.  [Logs and Troubleshooting](#9-waf-logs-and-troubleshooting)
-10. [Best Practices](#10-best-practices)
-11. [Interview Revision](#11-quick-interview-revision)
+# Azure Application Gateway WAF 
 
 ## 1. Azure Application Gateway
 
@@ -25,44 +7,10 @@ Layer) web traffic load balancer that routes HTTP/HTTPS requests to
 backend applications. It can integrate with a Web Application Firewall
 (WAF).
 
-**Simple explanation:** Think of Application Gateway as a gatekeeper
-between users and your web application. It receives requests, applies
-routing rules, and forwards allowed requests to the appropriate backend.
 
-### Key features
 
--   Layer 7 load balancing for HTTP/HTTPS.
--   Host-based and path-based routing.
--   TLS termination and HTTPS communication to the backend.
--   WAF integration.
--   Health probes to monitor backend availability.
--   Cookie-based session affinity when required.
--   Autoscaling and zone redundancy, depending on configuration and SKU.
+<img width="820" height="342" alt="image" src="https://github.com/user-attachments/assets/d0372d08-dbe9-45e3-b645-ecadd4ad5ab6" />
 
-### Main components
-
-  -----------------------------------------------------------------------
-  Component                           Purpose
-  ----------------------------------- -----------------------------------
-  Frontend IP                         Entry point for client traffic
-
-  Listener                            Listens on an IP, port, protocol,
-                                      and optionally hostname
-
-  Routing rule                        Connects a listener to a backend
-                                      and defines routing behavior
-
-  Backend pool                        Contains backend targets such as
-                                      VMs, IP addresses, or App Services
-
-  Backend settings                    Defines backend protocol, port,
-                                      hostname, and timeout
-
-  Health probe                        Checks whether backend targets are
-                                      healthy
-
-  WAF policy                          Applies web security rules to
-                                      requests
   -----------------------------------------------------------------------
 
 **Interview answer:** Application Gateway is an Azure Layer 7 load
@@ -103,44 +51,15 @@ listener, or supported scope.
 **Definition:** SQL injection is an attack in which specially crafted
 input changes the intended behavior of an application's SQL query.
 
-Example test strings:
-
 ``` sql
 ' OR '1'='1
 ```
-
-``` sql
-' UNION SELECT NULL--
-```
-
-These are SQL-injection-like strings; they do not automatically exploit
-a vulnerability.
-
-### Potential impact
-
--   Unauthorized data access.
--   Authentication bypass in vulnerable applications.
--   Modification or deletion of database data.
--   Exposure of sensitive information.
-
-### How WAF helps
-
-1.  A client submits an HTTP request.
-2.  WAF managed rules inspect relevant request components.
-3.  If a request matches a blocking rule in Prevention mode, WAF can
-    block it.
-4.  Matching details may be recorded in diagnostic logs.
-
-**Best practice:** Use parameterized SQL queries and secure input
-handling. WAF is an additional layer, not a replacement for secure
-application coding.
 
 ## 4. Cross-Site Scripting (XSS)
 
 **Definition:** XSS is a vulnerability in which attacker-controlled
 content is interpreted as executable script in another user's browser.
 
-Example test strings:
 
 ``` html
 <script>alert(1)</script>
@@ -149,15 +68,6 @@ Example test strings:
 ``` html
 <img src=x onerror=alert(1)>
 ```
-
-Use these only in your authorized test environment.
-
-### Potential impact
-
--   Unauthorized actions in a user's browser.
--   Theft of accessible session information.
--   Manipulation of page content.
--   Phishing or redirection.
 
 ### How WAF helps
 
@@ -184,22 +94,6 @@ observing traffic and identifying false positives.
 Blocks requests that match applicable blocking rules. - Records relevant
 events when diagnostics are configured. - Useful when protection is
 ready to enforce.
-
-  -----------------------------------------------------------------------
-  Behavior                Detection               Prevention
-  ----------------------- ----------------------- -----------------------
-  Inspect requests        Yes                     Yes
-
-  Log matching events     When configured         When configured
-
-  Block matching          Normally no             Yes, when applicable
-  managed-rule traffic                            
-
-  Best use                Initial observation     Enforcing protection
-  -----------------------------------------------------------------------
-
-**Interview tip:** Start with Detection mode to understand traffic and
-false positives. Move to Prevention mode after validation.
 
 ## 6. How Application Gateway WAF Works
 
@@ -337,124 +231,16 @@ Check HTTP responses and WAF logs. Confirm the matched rule, action,
 timestamp, and request details before concluding that WAF blocked a
 request.
 
-## 9. WAF Logs and Troubleshooting
-
-### Enable diagnostics
-
-1.  Open Application Gateway in Azure Portal.
-2.  Navigate to **Monitoring → Diagnostic settings**.
-3.  Send WAF logs to a supported destination, such as Log Analytics.
-4.  Open the workspace and inspect records around the test time.
-
-If the `AGWFirewallLogs` table is available, start with:
-
-``` kusto
-AGWFirewallLogs
-| where TimeGenerated > ago(1h)
-| order by TimeGenerated desc
-```
-
-Inspect the available fields to identify the test request, matched rule,
-and action.
-
-### Common HTTP responses
-
-  -----------------------------------------------------------------------
-  Response                            Possible explanation
-  ----------------------------------- -----------------------------------
-  `200 OK`                            Application responded; this does
-                                      not prove WAF inspection
-
-  `403 Forbidden`                     WAF or another layer may have
-                                      denied the request
-
-  `502 Bad Gateway`                   Backend connectivity, health probe,
-                                      hostname, or TLS issue
-
-  `404 Not Found`                     Requested application route may not
-                                      exist
-  -----------------------------------------------------------------------
-
-### Troubleshooting checklist
-
--   Confirm the request passes through Application Gateway.
--   Check the WAF policy mode.
--   Confirm managed rules are enabled and applicable.
--   Check custom rule conditions and priorities.
--   Verify backend health and HTTPS settings.
--   Check WAF diagnostic logs.
--   Compare normal-request behavior with test-request behavior.
-
-## 10. Best Practices
-
-1.  Use managed WAF rules as a baseline for common web attacks.
-2.  Start in Detection mode when learning or evaluating false positives.
-3.  Use Prevention mode when the policy is ready to enforce protection.
-4.  Keep backend TLS validation enabled and configure the correct
-    hostname.
-5.  Use secure application coding practices, including output escaping
-    and parameterized database queries.
-6.  Enable diagnostic logging and monitor blocked requests.
-7.  Test rate limiting with controlled traffic and verify actual
-    enforcement.
-8.  Restrict direct backend access where appropriate so the intended
-    gateway security boundary cannot be bypassed.
-9.  Avoid overly broad custom rules that can block legitimate traffic.
-10. Do not store credentials, tokens, or certificates in the Git
-    repository.
-
-## 11. Quick Interview Revision
-
-  -----------------------------------------------------------------------
-  Question                            Short answer
-  ----------------------------------- -----------------------------------
-  What is Application Gateway?        An Azure Layer 7 load balancer for
-                                      HTTP/HTTPS traffic.
-
-  What is WAF?                        A firewall that inspects web
-                                      requests for suspicious patterns
-                                      and attacks.
-
-  What is a WAF policy?               A set of managed and custom rules
-                                      applied to a supported scope.
-
-  What is SQL injection?              An attack that manipulates SQL
-                                      query behavior through crafted
-                                      input.
-
-  What is XSS?                        A vulnerability that allows
-                                      untrusted content to execute as
-                                      script in a browser.
-
-  Detection vs Prevention?            Detection logs matching traffic;
-                                      Prevention can block matching
-                                      traffic.
-
-  Managed vs Custom rules?            Managed rules provide standard
-                                      protections; custom rules implement
-                                      specific conditions and actions.
-
-  What is rate limiting?              Restricting request frequency
-                                      according to a configured threshold
-                                      and duration.
-
-  Why use backend HTTPS?              To encrypt traffic between
-                                      Application Gateway and the
-                                      backend.
-
-  How do you verify a WAF block?      Correlate the test request with WAF
-                                      logs and the rule action.
-  -----------------------------------------------------------------------
+-----------------------------------------------------------------------
 
 ## Conclusion
 
-Azure Application Gateway provides Layer 7 routing, while its WAF
-integration adds inspection and protection against common web attacks.
-Managed rules, custom rules, rate limiting, correct backend
-configuration, and diagnostic logs work together to protect and
-troubleshoot web applications.
+<img width="678" height="706" alt="image" src="https://github.com/user-attachments/assets/de284ec1-d944-47ac-a063-0c6c3d407e55" />
 
-The key lesson from this lab is that a request returning `403` is not
-sufficient proof of WAF protection. Confirm that traffic passed through
-Application Gateway and that the WAF logs show the relevant rule and
-blocking action.
+<img width="1172" height="550" alt="image" src="https://github.com/user-attachments/assets/bc0dcf86-5795-404a-bf0d-d04c9acd48e4" />
+
+
+<img width="1885" height="716" alt="image" src="https://github.com/user-attachments/assets/b600b04e-2a20-4345-be19-9c034e78c21e" />
+
+<img width="1823" height="774" alt="image" src="https://github.com/user-attachments/assets/8cab8106-322a-4f79-8fc0-826c79046523" />
+
